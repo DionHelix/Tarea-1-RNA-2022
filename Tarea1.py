@@ -7,11 +7,11 @@ import adam_optim
 from adam_optim import AdamOptim
 from network3 import Network, FullyConnectedLayer, SoftmaxLayer 
 
-training_data, validation_data , test_data = mnist_loader.load_data_wrapper()
+training_data, validation_data, test_data = network3.load_data_shared()
 
-training_data = list(training_data)
-test_data = list(test_data)
+mini_batch_size = 10
 
-net = network2.Network([784, 30, 10], cost=network2.CrossEntropyCost)
-net.SGD(training_data, 50, 10, 3.0, lmbda = 5.0,evaluation_data=validation_data,
-    monitor_evaluation_accuracy=True)
+net = Network([
+    FullyConnectedLayer(n_in=784, n_out=30),
+    SoftmaxLayer(n_in=30, n_out=10)], mini_batch_size)
+net.SGD(training_data, 5, mini_batch_size, 3.0, validation_data, test_data)
