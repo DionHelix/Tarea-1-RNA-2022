@@ -15,6 +15,8 @@ and omits many desirable features.
 #### Libraries
 # Standard library
 import random
+import adam_optim2
+from adam_optim2 import AdamOptim
 
 # Third-party libraries
 import numpy as np
@@ -79,7 +81,6 @@ class Network(object):
         gradient descent using backpropagation to a single mini batch.
         The ``mini_batch`` is a list of tuples ``(x, y)``, and ``eta``
         is the learning rate."""
-        
         nabla_b = [np.zeros(b.shape) for b in self.biases]
         nabla_w = [np.zeros(w.shape) for w in self.weights]
         for x, y in mini_batch:
@@ -87,38 +88,8 @@ class Network(object):
             nabla_b = [nb+dnb for nb, dnb in zip(nabla_b, delta_nabla_b)]
             nabla_w = [nw+dnw for nw, dnw in zip(nabla_w, delta_nabla_w)]
         
-            self.m_dw, self.v_dw = 0, 0
-            self.m_db, self.v_db = 0, 0
-            beta1 = 0.9
-            beta2 = 0.999
-            epsilon = 1e-8
-            self.dw = self.dw
-            self.db = self.db
-            self.t = self.t
-            self.w = self.w 
-            self.b = self.b
-            
-        # *** weights *** #
-        self.m_dw = beta1*self.m_dw + (1-self.beta1)*self.dw
-        # *** biases *** #
-        self.m_db = beta1*self.m_db + (1-self.beta1)*self.db
-
-        ## rms beta 2
-        # *** weights *** #
-        self.v_dw = beta2*self.v_dw + (1-self.beta2)*(self.dw**2)
-        # *** biases *** #
-        self.v_db = beta2*self.v_db + (1-self.beta2)*(self.db)
-
-        ## bias correction
-        m_dw_corr = self.m_dw/(1-self.beta1**self.t)
-        m_db_corr = self.m_db/(1-self.beta1**self.t)
-        v_dw_corr = self.v_dw/(1-self.beta2**self.t)
-        v_db_corr = self.v_db/(1-self.beta2**self.t)
-
-        ## update weights and biases  
-        
-        self.weights = self.w - eta*(m_dw_corr/(np.sqrt(v_dw_corr)+epsilon))
-        self.biases = self.b - eta*(m_db_corr/(np.sqrt(v_db_corr)+epsilon))
+        ADAMOPTIM = adam_optim2.AdamOptim(eta=0.01, beta1=0.9, beta2=0.999, epsilon=1e-8)
+        ADAMOPTIM.update
 
     def backprop(self, x, y):
         """Return a tuple ``(nabla_b, nabla_w)`` representing the
