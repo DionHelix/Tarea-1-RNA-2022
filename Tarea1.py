@@ -1,17 +1,11 @@
 import mnist_loader
-import network
-import network2
-import network3
-import pickle
-import adam_optim 
-from adam_optim import AdamOptim
-from network3 import Network, FullyConnectedLayer, SoftmaxLayer 
+import network4
+from network4 import AdamOptim
 
-training_data, validation_data, test_data = network3.load_data_shared()
+training_data, validation_data , test_data = mnist_loader.load_data_wrapper()
 
-mini_batch_size = 10
+training_data = list(training_data)
+test_data = list(test_data)
 
-net = Network([
-    FullyConnectedLayer(n_in=784, n_out=30),
-    SoftmaxLayer(n_in=30, n_out=10)], mini_batch_size)
-net.SGD(training_data, 5, mini_batch_size, 3.0, validation_data, test_data)
+net=network4.Network([784,30,10], AdamOptim(eta=0.01, beta1=0.9, beta2=0.999, epsilon=1e-8))
+net.ADAM( training_data, 30, 10, 3.0, test_data=test_data)

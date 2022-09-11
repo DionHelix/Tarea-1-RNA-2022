@@ -23,7 +23,7 @@ import numpy as np
 
 class Network(object):
 
-    def __init__(self, sizes):
+    def __init__(self, sizes, AdamOptim):
         """The list ``sizes`` contains the number of neurons in the
         respective layers of the network.  For example, if the list
         was [2, 3, 1] then it would be a three-layer network, with the
@@ -88,9 +88,39 @@ class Network(object):
             nabla_b = [nb+dnb for nb, dnb in zip(nabla_b, delta_nabla_b)]
             nabla_w = [nw+dnw for nw, dnw in zip(nabla_w, delta_nabla_w)]
         
-        ADAMOPTIM = adam_optim2.AdamOptim(eta=0.01, beta1=0.9, beta2=0.999, epsilon=1e-8)
-        ADAMOPTIM.update
+        class AdamOptim():
+            def __init__(self, eta=0.01, beta1=0.9, beta2=0.999, epsilon=1e-8):
+                self.m_dw, self.v_dw = 0, 0
+                self.m_db, self.v_db = 0, 0
+                self.beta1 = beta1
+                self.beta2 = beta2
+                self.epsilon = epsilon
+                self.eta = eta
+            def update(self, t, w, b, dw, db):
+                ## dw, db are from current minibatch
+                ## momentum beta 1
+                # *** weights *** #
+                self.m_dw = self.beta1*self.m_dw + (1-self.beta1)*dw
+                # *** biases *** #
+                self.m_db = self.beta1*self.m_db + (1-self.beta1)*db
 
+                ## rms beta 2
+                # *** weights *** #
+                self.v_dw = self.beta2*self.v_dw + (1-self.beta2)*(dw**2)
+                # *** biases *** #
+                self.v_db = self.beta2*self.v_db + (1-self.beta2)*(db)
+
+                ## bias correction
+                m_dw_corr = self.m_dw/(1-self.beta1**t)
+                m_db_corr = self.m_db/(1-self.beta1**t)
+                v_dw_corr = self.v_dw/(1-self.beta2**t)
+                v_db_corr = self.v_db/(1-self.beta2**t)
+                
+                self.weights = w - self.eta*(m_dw_corr/(np.sqrt(v_dw_corr)+self.epsilon))
+                self.biases = b - self.eta*(m_db_corr/(np.sqrt(v_db_corr)+self.epsilon))
+                return self.weights, self.biases
+            
+        
     def backprop(self, x, y):
         """Return a tuple ``(nabla_b, nabla_w)`` representing the
         gradient for the cost function C_x.  ``nabla_b`` and
