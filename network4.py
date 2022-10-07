@@ -15,16 +15,13 @@ and omits many desirable features.
 #### Libraries
 # Standard library
 import random
-import adam_optim2
-from adam_optim2 import AdamOptim
 
 # Third-party libraries
 import numpy as np
 
-
 class Network(object):
 
-    def __init__(self, sizes, AdamOptim):
+    def __init__(self, sizes):
         """The list ``sizes`` contains the number of neurons in the
         respective layers of the network.  For example, if the list
         was [2, 3, 1] then it would be a three-layer network, with the
@@ -40,14 +37,16 @@ class Network(object):
         self.biases = [np.random.randn(y, 1) for y in sizes[1:]]
         self.weights = [np.random.randn(y, x)
                         for x, y in zip(sizes[:-1], sizes[1:])]
-
+        self.epsilon = 0.00001
+        self.beta = 0.9
+        self.g2 = 0
     def feedforward(self, a):
         """Return the output of the network if ``a`` is input."""
         for b, w in zip(self.biases, self.weights):
             a = sigmoid(np.dot(w, a)+b)
         return a
 
-    def ADAM(self, training_data, epochs, mini_batch_size, eta,
+    def RMSPROP(self, training_data, epochs, mini_batch_size, eta,
             test_data=None):
         """Train the neural network using mini-batch stochastic
         gradient descent.  The ``training_data`` is a list of tuples
@@ -71,13 +70,13 @@ class Network(object):
                 training_data[k:k+mini_batch_size]
                 for k in range(0, n, mini_batch_size)]
             for mini_batch in mini_batches:
-                self.update_mini_batch(mini_batch, eta, beta1=0.9, beta2=0.999, epsilon=1e-8, t, w, b, dw, db)
+                self.update_mini_batch(mini_batch, eta)
             if test_data:
                 print("Epoch {} : {} / {}".format(j,self.evaluate(test_data),n_test))
             else:
                 print("Epoch {} complete".format(j))
 
-    def update_mini_batch(self, mini_batch, eta, beta1=0.9, beta2=0.999, epsilon=1e-8, t, w, b, dw, db):
+    def update_mini_batch(self, mini_batch, eta):
         """Update the network's weights and biases by applying
         gradient descent using backpropagation to a single mini batch.
         The ``mini_batch`` is a list of tuples ``(x, y)``, and ``eta``
@@ -88,38 +87,14 @@ class Network(object):
             delta_nabla_b, delta_nabla_w = self.backprop(x, y)
             nabla_b = [nb+dnb for nb, dnb in zip(nabla_b, delta_nabla_b)]
             nabla_w = [nw+dnw for nw, dnw in zip(nabla_w, delta_nabla_w)]
-            
-    self.m_dw, self.v_dw = 0, 0
-    self.m_db, self.v_db = 0, 0
-    self.beta1 = beta1
-    self.beta2 = beta2
-    self.epsilon = epsilon
-    self.eta = eta
-
-    ## dw, db are from current minibatch
-    ## momentum beta 1
-    # *** weights *** #
-    self.m_dw = self.beta1*self.m_dw + (1-self.beta1)*dw
-    # *** biases *** #
-    self.m_db = self.beta1*self.m_db + (1-self.beta1)*db
-
-    ## rms beta 2
-    # *** weights *** #
-    self.v_dw = self.beta2*self.v_dw + (1-self.beta2)*(dw**2)
-    # *** biases *** #
-    self.v_db = self.beta2*self.v_db + (1-self.beta2)*(db)
-
-    ## bias correction
-    m_dw_corr = self.m_dw/(1-self.beta1**t)
-    m_db_corr = self.m_db/(1-self.beta1**t)
-    v_dw_corr = self.v_dw/(1-self.beta2**t)
-    v_db_corr = self.v_db/(1-self.beta2**t)
-    
-    self.weights = [w - self.eta*(m_dw_corr/(np.sqrt(v_dw_corr)+self.epsilon)) for w in zip(self.weights, nabla_w)]
-    self.biases = [b - self.eta*(m_db_corr/(np.sqrt(v_db_corr)+self.epsilon)) for b in zip(self.biases, nabla_b)]
-    return self.weights, self.biases        
-
+        grad2 = np.sum([np.sum(np.power(w,2.)) for w in nabla_w ])
+        self.g2=self.beta*self.g2 + (1.-self.beta)*grad2
+        self.weights = [w-(eta/len(mini_batch))/(np.sqrt(self.g2)+self.epsilon)*nw
+                        for w, nw in zip(self.weights, nabla_w)]
+        self.biases = [b-(eta/len(mini_batch))*nb
+                       for b, nb in zip(self.biases, nabla_b)]
         
+
     def backprop(self, x, y):
         """Return a tuple ``(nabla_b, nabla_w)`` representing the
         gradient for the cost function C_x.  ``nabla_b`` and
